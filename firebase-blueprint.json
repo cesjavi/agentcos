@@ -1,0 +1,180 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A container for related tasks and agents.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "githubUrl": { "type": "string" },
+        "metadata": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "ownerId", "createdAt", "updatedAt"]
+    },
+    "Agent": {
+      "title": "Agent",
+      "description": "Definition of an AI agent role and base configuration.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["planner", "executor", "reviewer", "optimizer", "memory"] },
+        "instructions": { "type": "string" },
+        "modelConfig": { "type": "object" },
+        "projectId": { "type": "string" },
+        "activePromptVersionId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "role", "projectId", "createdAt"]
+    },
+    "Prompt": {
+      "title": "Prompt",
+      "description": "A template for an agent's brain.",
+      "type": "object",
+      "properties": {
+        "agentId": { "type": "string" },
+        "name": { "type": "string" },
+        "currentVersionId": { "type": "string" }
+      },
+      "required": ["agentId", "name"]
+    },
+    "PromptVersion": {
+      "title": "Prompt Version",
+      "description": "A specific version of a prompt template.",
+      "type": "object",
+      "properties": {
+        "promptId": { "type": "string" },
+        "content": { "type": "string" },
+        "versionNumber": { "type": "number" },
+        "performanceScore": { "type": "number" },
+        "changes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A specific request to be executed by agents.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "input": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "running", "completed", "failed"] },
+        "currentExecutionId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Execution": {
+      "title": "Execution",
+      "description": "A record of a task execution process.",
+      "type": "object",
+      "properties": {
+        "taskId": { "type": "string" },
+        "promptVersionId": { "type": "string" },
+        "status": { "type": "string" },
+        "result": { "type": "string" },
+        "tokenUsage": { "type": "object" },
+        "cost": { "type": "number" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "finishedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ExecutionLog": {
+      "title": "Execution Log",
+      "description": "A single step/log entry in an execution.",
+      "type": "object",
+      "properties": {
+        "executionId": { "type": "string" },
+        "agentId": { "type": "string" },
+        "promptVersionId": { "type": "string" },
+        "step": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["info", "result", "error", "prompt"] }
+      }
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "User evaluation of an execution.",
+      "type": "object",
+      "properties": {
+        "executionId": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "corrections": { "type": "string" },
+        "isApproved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Memory": {
+      "title": "Memory",
+      "description": "Learned knowledge fragments.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "content": { "type": "string" },
+        "tags": { "type": "array" },
+        "type": { "type": "string", "enum": ["preference", "error_fix", "success_pattern", "rule"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "UserSettings": {
+      "title": "User Settings",
+      "description": "Custom configuration for AI providers and GitHub.",
+      "type": "object",
+      "properties": {
+        "preferredProvider": { "type": "string", "enum": ["gemini", "groq"] },
+        "geminiModel": { "type": "string" },
+        "groqApiKey": { "type": "string" },
+        "groqModel": { "type": "string" },
+        "githubToken": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "projects": {
+      "schema": "Project",
+      "description": "Top-level projects."
+    },
+    "agents": {
+      "schema": "Agent",
+      "description": "Agents defined within projects."
+    },
+    "prompts": {
+      "schema": "Prompt",
+      "description": "Managed prompts for agents."
+    },
+    "promptVersions": {
+      "schema": "PromptVersion",
+      "description": "Versions history of prompts."
+    },
+    "tasks": {
+      "schema": "Task",
+      "description": "Tasks within projects."
+    },
+    "executions": {
+      "schema": "Execution",
+      "description": "Execution records for tasks."
+    },
+    "executionLogs": {
+      "schema": "ExecutionLog",
+      "description": "Real-time logs for executions."
+    },
+    "feedback": {
+      "schema": "Feedback",
+      "description": "User feedback on executions."
+    },
+    "memories": {
+      "schema": "Memory",
+      "description": "Persistent memory entries."
+    },
+    "userSettings": {
+      "schema": "UserSettings",
+      "description": "Personalized settings per user."
+    }
+  }
+}

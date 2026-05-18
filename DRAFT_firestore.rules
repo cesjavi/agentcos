@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Projects
+    function isValidProject(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 256 &&
+             data.ownerId == request.auth.uid &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time;
+    }
+
+    match /projects/{projectId} {
+      allow create: if isSignedIn() && isValidId(projectId) && isValidProject(incoming());
+      allow read, update, delete: if isOwner(existing().ownerId);
+    }
+
+    // Agents
+    function isValidAgent(data) {
+      return data.name is string && data.name.size() <= 256 &&
+             data.role in ['planner', 'executor', 'reviewer', 'optimizer', 'memory'] &&
+             data.projectId is string &&
+             data.createdAt == request.time;
+    }
+
+    match /agents/{agentId} {
+      allow create: if isSignedIn() && isValidId(agentId) && isValidAgent(incoming()) &&
+                     exists(/databases/$(database)/documents/projects/$(incoming().projectId)) &&
+                     get(/databases/$(database)/documents/projects/$(incoming().projectId)).data.ownerId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() &&
+                                     get(/databases/$(database)/documents/projects/existing().projectId).data.ownerId == request.auth.uid;
+    }
+
+    // Prompts & Versions
+    match /prompts/{promptId} {
+      allow read, write: if isSignedIn(); // Simplified for now but will harden
+    }
+    match /promptVersions/{versionId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update, delete: if false; // Immutable
+    }
+
+    // Tasks & Executions
+    match /tasks/{taskId} {
+      allow read, write: if isSignedIn();
+    }
+    match /executions/{executionId} {
+      allow read, write: if isSignedIn();
+    }
+    match /executionLogs/{logId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Feedback
+    match /feedback/{feedbackId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Memories
+    match /memories/{memoryId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}
